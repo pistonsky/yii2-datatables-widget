@@ -20,7 +20,9 @@
                 "source": "https://github.com/snickom/yii2-datatables-widget"
         },
         "require": { 
-                "php": ">=5.4.0",
-                "datatables/datatables": "1.10.*"
+                "php": ">=5.4.0"
+        },
+        "autoload": {
+                "classmap": ["assets/", "widgets/"]
         }
 }

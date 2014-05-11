@@ -11,40 +11,27 @@ namespace snickom\datatables;
 
 use Yii;
 use yii\web\Response;
-use app\components\Tool;
+use snickom\datatables\DatatableAsset;
 
 class DynamicTable extends \yii\base\Widget
 {
+	private $_config;
 	private $_view;
 
-	public function begin()
+	public function begin($config = [])
 	{
-		$_view = parent::getView();
-		
-		$_view->registerAssets();
-		echo Html::tag('div', $this->renderInput(), $this->containerOptions);
+		$this->_view = parent::getView();
 		parent::begin();
 	}
 
 	public function run()
 	{
-		Yii::$app->response->format = 'json';
-		$data = MyModel::find()->asArray()->all();
-
-		self::show
-            	return $this->render('mywidget');
-	}
-
-	static public function getParam($name,$defaultValue=null,$type='')
-	{
-		$type = strtoupper(trim($type));
-
-		if ($type == 'GET') 
-			return isset($_GET[$name]) ? $_GET[$name] : $defaultValue;
-		else if ($type == 'POST') 
-			return isset($_POST[$name]) ? $_POST[$name] : $defaultValue;
-		else
-			return isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : $defaultValue);
+		if (self::getParam('sdt', false)) {
+			return self::request();
+		} else {
+			DatatableAsset::register($this->_view);
+			return self::show();
+		}
 	}
 
 	static protected function request($data=[], $eval=[]) {
@@ -58,43 +45,43 @@ class DynamicTable extends \yii\base\Widget
 		if (!isset($eval['searchAnd'])) $eval['searchAnd'] = '';
 
 		$cols = [];
-		$colsTmp = explode(';',Tool::getParam('columns', ''));
+		$colsTmp = explode(';',self::getParam('columns', ''));
 		foreach ($colsTmp as $key => $value) {
 			$tmp = explode(',',$value);
 			if (count($tmp) == 2) $cols[$tmp[1]] = $tmp[0]; 
 		}
 		unset($colsTmp);
 
-		$iColumns = (int)Tool::getParam('iColumns', 0);
+		$iColumns = (int)self::getParam('iColumns', 0);
 		$aColumns = [];
 		$filterColumn = [];
 
 		if ($iColumns > 0) for($i=0; $i<$iColumns; $i++){
-			$aColumns[$i] = "`".str_replace('__','`.`',Tool::getParam('mDataProp_'.$i))."`";
-			$filterColumn[$i] = "`".str_replace('__','`.`',Tool::getParam('filterColumn['.$i.']'))."`"; 
+			$aColumns[$i] = "`".str_replace('__','`.`',self::getParam('mDataProp_'.$i))."`";
+			$filterColumn[$i] = "`".str_replace('__','`.`',self::getParam('filterColumn['.$i.']'))."`"; 
 		}
 
 		$sLimit = "";
-		if ( Tool::getParam('iDisplayLength', '') != '-1')
+		if ( self::getParam('iDisplayLength', '') != '-1')
 		{
-			$tmpX1 = intval( Tool::getParam('iDisplayStart', 0) );
-			$tmpX2 = intval( Tool::getParam('iDisplayLength', 50) );
+			$tmpX1 = intval( self::getParam('iDisplayStart', 0) );
+			$tmpX2 = intval( self::getParam('iDisplayLength', 50) );
 			$sLimit = " LIMIT {$tmpX1}, {$tmpX2}";
 		}
 
 		$sOrder = "";
-		if ( Tool::getParam('iSortCol_0', false) )
+		if ( self::getParam('iSortCol_0', false) )
 		{
 			$sOrder = " ORDER BY ";
-			for ( $i=0 ; $i<intval( Tool::getParam('iSortingCols') ) ; $i++ )
+			for ( $i=0 ; $i<intval( self::getParam('iSortingCols') ) ; $i++ )
 			{
-				if ( Tool::getParam( 'bSortable_'.intval(Tool::getParam('iSortCol_'.$i)) ) == "true" )
+				if ( self::getParam( 'bSortable_'.intval(self::getParam('iSortCol_'.$i)) ) == "true" )
 				{
 				
 					if ($sOrder != " ORDER BY ") $sOrder .= ', ';
 
-					$sOrder .= substr(Yii::$app->db->quoteValue($aColumns[ intval( Tool::getParam('iSortCol_'.$i) ) ]),1,-1)." ";
-					$sOrder .= (Tool::getParam('sSortDir_'.$i, 'asc')==='asc' ? 'asc' : 'desc') ." ";
+					$sOrder .= substr(Yii::$app->db->quoteValue($aColumns[ intval( self::getParam('iSortCol_'.$i) ) ]),1,-1)." ";
+					$sOrder .= (self::getParam('sSortDir_'.$i, 'asc')==='asc' ? 'asc' : 'desc') ." ";
 				}
 			}
 
@@ -102,15 +89,15 @@ class DynamicTable extends \yii\base\Widget
 		}
 
 		$sWhere = "";
-		if ( Tool::getParam('sSearch','') != '' )
+		if ( self::getParam('sSearch','') != '' )
 		{
-			$sSearchData = Yii::$app->db->quoteValue(trim(Tool::getParam('sSearch')));
-			$sSearchColumn = Yii::$app->db->quoteValue('%'.trim(Tool::getParam('sSearch')).'%');
+			$sSearchData = Yii::$app->db->quoteValue(trim(self::getParam('sSearch')));
+			$sSearchColumn = Yii::$app->db->quoteValue('%'.trim(self::getParam('sSearch')).'%');
 
 			$sWhere .= " AND (";
 			for ( $i=0; $i<$iColumns; $i++ )
 			{
-				$sSearch = substr(Yii::$app->db->quoteValue(Tool::getParam('filterColumn['.$i.']')),1,-1);
+				$sSearch = substr(Yii::$app->db->quoteValue(self::getParam('filterColumn['.$i.']')),1,-1);
 
 				eval(
 				'switch ($sSearch) { 
@@ -128,11 +115,11 @@ class DynamicTable extends \yii\base\Widget
 
 		for ( $i=0 ; $i<$iColumns; $i++ )
 		{
-			if ( Tool::getParam('bSearchable_'.$i, false) && Tool::getParam('bSearchable_'.$i) == "true" && Tool::getParam('sSearch_'.$i,'') != '' )
+			if ( self::getParam('bSearchable_'.$i, false) && self::getParam('bSearchable_'.$i) == "true" && self::getParam('sSearch_'.$i,'') != '' )
 			{
-				$sSearchData = Yii::$app->db->quoteValue(trim(Tool::getParam('sSearch_'.$i)));
-				$sSearchColumn = Yii::$app->db->quoteValue('%'.trim(Tool::getParam('sSearch_'.$i)).'%');
-				$sSearch = substr(Yii::$app->db->quoteValue(Tool::getParam('filterColumn['.$i.']')),1,-1);
+				$sSearchData = Yii::$app->db->quoteValue(trim(self::getParam('sSearch_'.$i)));
+				$sSearchColumn = Yii::$app->db->quoteValue('%'.trim(self::getParam('sSearch_'.$i)).'%');
+				$sSearch = substr(Yii::$app->db->quoteValue(self::getParam('filterColumn['.$i.']')),1,-1);
 
 				eval(
 				'switch ($sSearch) { 
@@ -172,25 +159,17 @@ class DynamicTable extends \yii\base\Widget
 		$iTotal = Yii::$app->db->createCommand("SELECT COUNT(*) FROM `{$sTable}` `t` WHERE ".(!empty($data['condition']) ? $data['condition'] : '1=1'))->queryScalar();
 
 		$output = [
-			"sEcho" => intval(Tool::getParam('sEcho',1)),
+			"sEcho" => intval(self::getParam('sEcho',1)),
 			"iTotalRecords" => $iTotal,
 			"iTotalDisplayRecords" => $iFilteredTotal,
 			"aaData" => $aaData,
 			"aaDataAll" => $aaDataAll
 		];
 
-		// header('Content-type: application/json; charset='.Yii::$app->charset);
-		// echo json_encode( $output ); 
-		// Yii::$app->end(); 
 		return $output;
 	}
 
 	static protected function show($data=[]) {
-
-		$asset = \app\assets\AppAsset::register($data['view']);
-				
-		$data['view']->registerJsFile($asset->baseUrl.'/js/plugins/interface/jquery.dataTables.min.js',[\yii\web\JqueryAsset::className()]);
-		$data['view']->registerJsFile($asset->baseUrl.'/js/plugins/interface/dataTables/TableTools/js/dataTables.tableTools.min.js',[\yii\web\JqueryAsset::className()]);
 
 		$xtraChar = ((strpos(Yii::$app->request->getUrl(), '?') !== false) ? '&' : '?');
 		if (isset($data['ajax']) && !empty($data['ajax'])) $xtraChar = ((strpos($data['ajax'], '?') !== false) ? '&' : '?');
@@ -514,5 +493,17 @@ class DynamicTable extends \yii\base\Widget
 			</table>
 		</div>
 	</div>';
+	}
+
+	static protected function getParam($name,$defaultValue=null,$type='')
+	{
+		$type = strtoupper(trim($type));
+
+		if ($type == 'GET') 
+			return isset($_GET[$name]) ? $_GET[$name] : $defaultValue;
+		else if ($type == 'POST') 
+			return isset($_POST[$name]) ? $_POST[$name] : $defaultValue;
+		else
+			return isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : $defaultValue);
 	}
 }

@@ -1,4 +1,5 @@
-Yii2 - jQuery DataTables - NOT WORKING NOW!!!
+Yii2 - jQuery DataTables 
+!!! NOT WORKING NOW - DEV !!!
 ========================
 Yii2 extension implements jQuery DataTables
 
