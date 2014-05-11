@@ -172,7 +172,7 @@ class DynamicTable extends \yii\base\Widget
 	}
 
 	static protected function show($data=[]) {
-
+		/*
 		$xtraChar = ((strpos(Yii::$app->request->getUrl(), '?') !== false) ? '&' : '?');
 		if (isset($data['ajax']) && !empty($data['ajax'])) $xtraChar = ((strpos($data['ajax'], '?') !== false) ? '&' : '?');
 
@@ -218,7 +218,7 @@ class DynamicTable extends \yii\base\Widget
 
 		        var ".$data['jsid']."_first = false;
 		        var ".$data['jsid']." = $('#".$data['id']."').dataTable( {
-		            /* 'bStateSave': true,
+		            / * 'bStateSave': true,
 		            'fnStateSave': function (oSettings, oData) {
 		                localStorage.setItem( '".$data['id']."-pt-'+window.location.pathname, JSON.stringify(oData) );
 		            },
@@ -230,12 +230,12 @@ class DynamicTable extends \yii\base\Widget
 		                [10,25,50,100,250,500, -1],
 		                [10,25,50,100,250,500, 'Všetko']
 		            ],
-		            'aaSorting': [ [ 1, 'desc' ] ],*/
+		            'aaSorting': [ [ 1, 'desc' ] ],* /
 		            'bJQueryUI': false,
 		            'bAutoWidth': false,
 		            'sPaginationType': 'full_numbers',
 		            'sDom': '<\'datatable-header\'Tfl><\'datatable-scroll\'rt><\'datatable-footer\'ip>',
-			/*'oTableTools': {
+			/ *'oTableTools': {
 				'sRowSelect': 'multi',
 				'sSwfPath': '".$asset->baseUrl."/media/swf/copy_csv_xls_pdf.swf',
 				'aButtons': [
@@ -262,7 +262,7 @@ class DynamicTable extends \yii\base\Widget
 						'aButtons':    [ 'select_all', 'select_none' ]
 					}
 				]
-			},*/
+			},* /
 		            'processing': true,
 		            'serverSide': true,
 		            'ajax': {
@@ -289,7 +289,7 @@ class DynamicTable extends \yii\base\Widget
 			        $(row).addClass('selected');
 			    }
 			},
-		            /*'aoColumns': aoColumns,
+		            / *'aoColumns': aoColumns,
 		            'fnRowCallback': function( nRow, aData, iDisplayIndex ) {
 		                $(nRow).attr('data-ajax',aData.".$data['primaryId'].");
 		                return nRow;
@@ -326,7 +326,7 @@ class DynamicTable extends \yii\base\Widget
 		            },
 		            'fnInitComplete': function(oSettings, json) {
 
-		            }, */
+		            }, * /
 
 		            'oLanguage': {
 		                'sUrl'  : '".$asset->baseUrl."/i18n/datatables.".Yii::$app->language.".json'
@@ -383,7 +383,7 @@ class DynamicTable extends \yii\base\Widget
 
 
 
-			/*$('#".$data['id']." tfoot input').keyup( function () {
+			/ *$('#".$data['id']." tfoot input').keyup( function () {
 			    oTable.fnFilter( this.value, $('#".$data['id']." tfoot input').index(this) );
 			});
 
@@ -393,7 +393,7 @@ class DynamicTable extends \yii\base\Widget
 		        $('.tableRefresher').click(function(){
 		            ".$data['jsid'].".fnDraw();
 		            $.jGrowl('Tabuľka bola aktualizovaná.');
-		        });*/
+		        });* /
 		});");
 		
 		echo '
@@ -495,6 +495,8 @@ class DynamicTable extends \yii\base\Widget
 			</table>
 		</div>
 	</div>';
+	*/
+		return '';
 	}
 
 	static protected function getParam($name,$defaultValue=null,$type='')
