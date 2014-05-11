@@ -20,5 +20,14 @@
         },
         "require": { 
                 "php": ">=5.4.0"
+        },
+        "autoload": {
+                "classmap": [
+                        "widgets/DynamicTable.php"
+                        "components/DatatableAssets.php",
+                ],
+                "files": [
+                        "components/DatatableAssets.php"
+                ]
         }
 }
