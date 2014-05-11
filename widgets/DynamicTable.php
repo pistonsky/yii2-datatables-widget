@@ -37,7 +37,7 @@ class DynamicTable extends \yii\base\Widget
 	static protected function request($data=[], $eval=[]) {
 
 		Yii::$app->response->format = Response::FORMAT_JSONP;
-
+/*
 		if (!isset($data['table'])) return false;
 		if (!isset($data['select'])) $data['select'] = '`t`.*';
 		if (!isset($data['condition'])) $data['condition'] = '';
@@ -167,6 +167,8 @@ class DynamicTable extends \yii\base\Widget
 		];
 
 		return $output;
+		*/
+		return [];
 	}
 
 	static protected function show($data=[]) {
