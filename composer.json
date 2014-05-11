@@ -1,7 +1,6 @@
 {
         "name": "snickom/yii2-datatables-widget",
         "description": "Yii2 extension implements jQuery DataTables",
-        "version": "1.0.0-dev",
         "type": "yii2-extension",
         "keywords": ["yii2","extension","datatables","jquery"],
         "license": "MIT",
