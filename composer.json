@@ -1,0 +1,26 @@
+{
+        "name": "snickom/yii2-datatables-widget",
+        "description": "Yii2 extension implements jQuery DataTables",
+        "version": "1.0.0-dev",
+        "type": "yii2-extension",
+        "keywords": ["yii2","extension","datatables","jquery"],
+        "license": "MIT",
+        "authors": [
+                {
+                        "name": "Jan Hamrak",
+                        "email": "snickom@gmail.com",
+                        "homepage": "http://www.unknow.sk/",
+                        "role": "Project lead"
+                }
+        ],
+        "support": {
+                "email": "snickom@gmail.com",
+                "issues": "https://github.com/snickom/yii2-datatables-widget/issues",
+                "issues": "https://github.com/snickom/yii2-datatables-widget/wiki",
+                "source": "https://github.com/snickom/yii2-datatables-widget"
+        },
+        "require": { 
+                "php": ">=5.4.0",
+                "datatables/datatables": "1.10.*"
+        }
+}
