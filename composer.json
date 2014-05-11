@@ -22,6 +22,6 @@
                 "php": ">=5.4.0"
         },
         "autoload": {
-                "classmap": ["assets/", "widgets/"]
+                "psr-4": { "": ["assets/", "widgets/"] }
         }
 }
