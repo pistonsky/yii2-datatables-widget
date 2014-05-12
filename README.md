@@ -1,6 +1,7 @@
 Yii2 - jQuery DataTables 
-!!! NOT WORKING NOW - DEV !!!
 ========================
+[![Latest Stable Version](https://poser.pugx.org/snickom/yii2-datatables-widget/v/stable.png)](https://packagist.org/packages/snickom/yii2-datatables-widget) [![Total Downloads](https://poser.pugx.org/snickom/yii2-datatables-widget/downloads.png)](https://packagist.org/packages/snickom/yii2-datatables-widget) [![Latest Unstable Version](https://poser.pugx.org/snickom/yii2-datatables-widget/v/unstable.png)](https://packagist.org/packages/snickom/yii2-datatables-widget) [![License](https://poser.pugx.org/snickom/yii2-datatables-widget/license.png)](https://packagist.org/packages/snickom/yii2-datatables-widget) 
+
 Yii2 extension implements jQuery DataTables
 
 Installation
@@ -29,7 +30,7 @@ Usage
 Once the extension is installed, simply use it in your code by  :
 
 ```php
-<?= \snickom\datatables\widgets\DynamicTable::widget([
+<?= \snickom\datatables\DynamicTable::widget([
 	'id'=>'datatable-grid',
 	'db'=>[],
 	'title'=>Yii::t('app','Table'),
