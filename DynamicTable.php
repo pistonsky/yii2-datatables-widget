@@ -14,33 +14,49 @@ use yii\web\Response;
 
 class DynamicTable extends \yii\base\Widget
 {
-	private $_view;
+	protected $_view;
+	protected $_settings;
 
-	public $db;
-
-	public function run()
+	public function __construct($input=[]) 
 	{
 		$this->_view = parent::getView();
 
+		if (!isset($input['id'])) $input['id'] = 'datatable-grid';
+		if (!isset($input['title'])) $input['title'] = Yii::t('app','Table');
+		if (!isset($input['table'])) return false;
+		if (!isset($input['primaryKey'])) $input['primaryKey'] = 'id';
+		if (!isset($input['select'])) $input['select'] = '`t`.*';
+		if (!isset($input['condition'])) $input['condition'] = '';
+		if (!isset($input['searchOr'])) $input['searchOr'] = '';
+		if (!isset($input['searchAnd'])) $input['searchAnd'] = '';
+		if (!isset($input['columns'])) $input['columns'] = [
+		    ['db' => 'id', 'dt' => 0],
+		    ['db' => 'name',  'dt' => 1],
+		    [
+		        'db'        => 'id',
+		        'dt'        => 2,
+		        'formatter' => function( $d, $row ) {
+		            return date( 'jS M y', strtotime($d));
+		        }
+		    ]
+		];
+
+		$this->_settings = $input;
+
 		if (self::getParam('sdt', false)) {
-			return self::request();
+			return $this->request();
 		} else {
 			\snickom\datatables\DatatableAsset::register($this->_view);
-			return self::show();
+			return $this->show();
 		}
 	}
 
-	static protected function request($data=[], $eval=[]) 
+	protected function request() 
 	{
 
 		Yii::$app->response->format = Response::FORMAT_JSONP;
-/*
-		if (!isset($data['table'])) return false;
-		if (!isset($data['select'])) $data['select'] = '`t`.*';
-		if (!isset($data['condition'])) $data['condition'] = '';
-		if (!isset($eval['searchOr'])) $eval['searchOr'] = '';
-		if (!isset($eval['searchAnd'])) $eval['searchAnd'] = '';
 
+/*
 		$cols = [];
 		$colsTmp = explode(';',self::getParam('columns', ''));
 		foreach ($colsTmp as $key => $value) {
@@ -152,9 +168,6 @@ class DynamicTable extends \yii\base\Widget
 			 } 
 		}
 
-		$iFilteredTotal = Yii::$app->db->createCommand('SELECT FOUND_ROWS();')->queryScalar();
-		$iTotal = Yii::$app->db->createCommand("SELECT COUNT(*) FROM `{$sTable}` `t` WHERE ".(!empty($data['condition']) ? $data['condition'] : '1=1'))->queryScalar();
-
 		$output = [
 			"sEcho" => intval(self::getParam('sEcho',1)),
 			"iTotalRecords" => $iTotal,
@@ -165,10 +178,39 @@ class DynamicTable extends \yii\base\Widget
 
 		return $output;
 		*/
+	
+		$bindings = [];
+
+		$limit = self::limit( $request, $columns );
+		$order = self::order( $request, $columns );
+		$where = self::filter( $request, $columns, $bindings );
+
+		// Main query to actually get the data
+		$sTable = substr(Yii::$app->db->quoteValue($data['table']),1,-1);
+		$sql = "SELECT SQL_CALC_FOUND_ROWS `".implode("`, `", self::pluck($columns, 'db'))."` FROM `{$sTable}` `t` WHERE ".(!empty($data['condition']) ? $data['condition'] : '1=1')." ".$where.$order;
+
+		$data = Yii::$app->db->createCommand($sql.$limit)->queryAll();
+
+		// Data set length after filtering
+		$recordsFiltered = Yii::$app->db->createCommand('SELECT FOUND_ROWS();')->queryScalar();
+
+		// Total data set length
+		$recordsTotal = Yii::$app->db->createCommand("SELECT COUNT(`t`.{$primaryKey}) FROM `{$sTable}` `t`".(!empty($data['condition']) ? ' WHERE '.$data['condition'] : ''))->queryScalar();
+
+		/*
+		 * Output
+		 */
+		return array(
+			"draw"            		=> intval( $request['draw'] ),
+			"recordsTotal"    	=> intval( $recordsTotal ),
+			"recordsFiltered" 	=> intval( $recordsFiltered ),
+			"data"            		=> self::data_output( $columns, $data )
+		);
+
 		return [];
 	}
 
-	static protected function show($data=[]) {
+	protected function show() {
 		/*
 		$xtraChar = ((strpos(Yii::$app->request->getUrl(), '?') !== false) ? '&' : '?');
 		if (isset($data['ajax']) && !empty($data['ajax'])) $xtraChar = ((strpos($data['ajax'], '?') !== false) ? '&' : '?');
@@ -393,26 +435,33 @@ class DynamicTable extends \yii\base\Widget
 		        });* /
 		});");
 		
-		echo '
+	*/
+	return '
 	<div class="panel panel-default">
-		<div class="panel-heading"><h6 class="panel-title"><i class="icon-table"></i> '.$data['title'].'</h6></div>
-		<div  id="'.$data['id'].'_parent" class="datatable-generated">
-			<table class="table" id="'.$data['id'].'">
+		<div class="panel-heading">
+			<h6 class="panel-title"><i class="icon-table"></i> '.$this->_settings['title'].'</h6>
+		</div>
+		<div  id="'.$this->_settings['id'].'_parent" class="datatable-generated">
+			<table class="table" id="'.$this->_settings['id'].'">
 				<thead>
 					<tr>';
-	                        foreach ($data['columns'] as $key => $value) {
-	                            if (isset($value['options'])) echo '<th>'.(isset($value['sTitle']) ? $value['sTitle'] : Yii::t('app','Možnosti')).'</th>';
-	                            else echo '<th>'.(isset($value['sTitle']) ? $value['sTitle'] : $value['sName']).'</th>';
-	                        }
-	                        echo '
+			                        foreach ($this->_settings['columns'] as $key => $value) {
+			                            echo '<th>'; 
+			                            if (isset($value['options'])) 
+			                            	echo (isset($value['title']) ? $value['title'] : Yii::t('app','Options'));
+			                            else 
+			                            	echo (isset($value['title']) ? $value['title'] : $value['name']);
+			                            echo '</th>';
+			                        }
+			                        echo '
 					</tr>
 				</thead>
 				<tfoot>
 					<tr class="dFilter">';
-	                        foreach ($data['columns'] as $key => $value) {
-	                        	if (isset($value['sFilter'])) {
-		                        	switch ($value['sFilter']) {
-		                        		case 'dateFromTo':
+	                        foreach ($this->_settings['columns'] as $key => $value) {
+	                        	if (isset($value['filter'])) {
+		                        	switch ($value['filter']) {
+		                        		/* case 'dateFromTo':
 		                        			echo '
 							<th>
 							    <ul class="dates-range">
@@ -473,9 +522,9 @@ class DynamicTable extends \yii\base\Widget
 							        <li><input type="text" class="form-control valNb" data-id="'.$key.'" data-name="'.$value['sName'].'" /></li>
 							    </ul>
 							</th>';
-		                        			break;
+		                        			break;*/
 		                        		default:
-		                        			echo '<th><input type="text" class="form-control" data-id="'.$key.'" data-name="'.$value['sName'].'"></th>';
+		                        			echo '<th><input type="text" class="form-control" data-id="'.$key.'" data-name="'.$value['name'].'"></th>';
 		                        			break;
 		                        	}
 	                        	} elseif (isset($value['options'])) {
@@ -492,8 +541,6 @@ class DynamicTable extends \yii\base\Widget
 			</table>
 		</div>
 	</div>';
-	*/
-		return '';
 	}
 
 	static protected function getParam($name,$defaultValue=null,$type='')
@@ -506,5 +553,185 @@ class DynamicTable extends \yii\base\Widget
 			return isset($_POST[$name]) ? $_POST[$name] : $defaultValue;
 		else
 			return isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : $defaultValue);
+	}
+
+
+	static protected function data_output ( $columns, $data )
+	{
+		$out = array();
+
+		for ( $i=0, $ien=count($data) ; $i<$ien ; $i++ ) {
+			$row = array();
+
+			for ( $j=0, $jen=count($columns) ; $j<$jen ; $j++ ) {
+				$column = $columns[$j];
+
+				// Is there a formatter?
+				if ( isset( $column['formatter'] ) ) {
+					$row[ $column['dt'] ] = $column['formatter']( $data[$i][ $column['db'] ], $data[$i] );
+				}
+				else {
+					$row[ $column['dt'] ] = $data[$i][ $columns[$j]['db'] ];
+				}
+			}
+
+			$out[] = $row;
+		}
+
+		return $out;
+	}
+
+
+	/**
+	 * Paging
+	 *
+	 * Construct the LIMIT clause for server-side processing SQL query
+	 *
+	 *  @param  array $request Data sent to server by DataTables
+	 *  @param  array $columns Column information array
+	 *  @return string SQL limit clause
+	 */
+	static protected function limit ( $request, $columns )
+	{
+		$limit = '';
+
+		if ( isset($request['start']) && $request['length'] != -1 ) {
+			$limit = "LIMIT ".intval($request['start']).", ".intval($request['length']);
+		}
+
+		return $limit;
+	}
+
+
+	/**
+	 * Ordering
+	 *
+	 * Construct the ORDER BY clause for server-side processing SQL query
+	 *
+	 *  @param  array $request Data sent to server by DataTables
+	 *  @param  array $columns Column information array
+	 *  @return string SQL order by clause
+	 */
+	static protected function order ( $request, $columns )
+	{
+		$order = '';
+
+		if ( isset($request['order']) && count($request['order']) ) {
+			$orderBy = array();
+			$dtColumns = self::pluck( $columns, 'dt' );
+
+			for ( $i=0, $ien=count($request['order']) ; $i<$ien ; $i++ ) {
+				// Convert the column index into the column data property
+				$columnIdx = intval($request['order'][$i]['column']);
+				$requestColumn = $request['columns'][$columnIdx];
+
+				$columnIdx = array_search( $requestColumn['data'], $dtColumns );
+				$column = $columns[ $columnIdx ];
+
+				if ( $requestColumn['orderable'] == 'true' ) {
+					$dir = $request['order'][$i]['dir'] === 'asc' ?
+						'ASC' :
+						'DESC';
+
+					$orderBy[] = '`'.$column['db'].'` '.$dir;
+				}
+			}
+
+			$order = 'ORDER BY '.implode(', ', $orderBy);
+		}
+
+		return $order;
+	}
+
+
+	/**
+	 * Searching / Filtering
+	 *
+	 * Construct the WHERE clause for server-side processing SQL query.
+	 *
+	 * NOTE this does not match the built-in DataTables filtering which does it
+	 * word by word on any field. It's possible to do here performance on large
+	 * databases would be very poor
+	 *
+	 *  @param  array $request Data sent to server by DataTables
+	 *  @param  array $columns Column information array
+	 *  @param  array $bindings Array of values for PDO bindings, used in the
+	 *    sql_exec() function
+	 *  @return string SQL where clause
+	 */
+	static protected function filter ( $request, $columns, &$bindings )
+	{
+		$globalSearch = array();
+		$columnSearch = array();
+		$dtColumns = self::pluck( $columns, 'dt' );
+
+		if ( isset($request['search']) && $request['search']['value'] != '' ) {
+			$str = $request['search']['value'];
+
+			for ( $i=0, $ien=count($request['columns']) ; $i<$ien ; $i++ ) {
+				$requestColumn = $request['columns'][$i];
+				$columnIdx = array_search( $requestColumn['data'], $dtColumns );
+				$column = $columns[ $columnIdx ];
+
+				if ( $requestColumn['searchable'] == 'true' ) {
+					$binding = self::bind( $bindings, '%'.$str.'%', PDO::PARAM_STR );
+					$globalSearch[] = "`".$column['db']."` LIKE ".$binding;
+				}
+			}
+		}
+
+		// Individual column filtering
+		for ( $i=0, $ien=count($request['columns']) ; $i<$ien ; $i++ ) {
+			$requestColumn = $request['columns'][$i];
+			$columnIdx = array_search( $requestColumn['data'], $dtColumns );
+			$column = $columns[ $columnIdx ];
+
+			$str = $requestColumn['search']['value'];
+
+			if ( $requestColumn['searchable'] == 'true' &&
+			 $str != '' ) {
+				$binding = self::bind( $bindings, '%'.$str.'%', PDO::PARAM_STR );
+				$columnSearch[] = "`".$column['db']."` LIKE ".$binding;
+			}
+		}
+
+		// Combine the filters into a single string
+		$where = '';
+
+		if ( count( $globalSearch ) ) {
+			$where = '('.implode(' OR ', $globalSearch).')';
+		}
+
+		if ( count( $columnSearch ) ) {
+			$where = $where === '' ?
+				implode(' AND ', $columnSearch) :
+				$where .' AND '. implode(' AND ', $columnSearch);
+		}
+
+		if ( $where !== '' ) {
+			$where = 'WHERE '.$where;
+		}
+
+		return $where;
+	}
+
+
+	/**
+	 * Pull a particular property from each assoc. array in a numeric array, 
+	 * returning and array of the property values from each item.
+	 *
+	 *  @param  array  $a    Array to get data from
+	 *  @param  string $prop Property to read
+	 *  @return array        Array of property values
+	 */
+	static protected function pluck ( $a, $prop )
+	{
+		$out = array();
+
+		for ( $i=0, $len=count($a) ; $i<$len ; $i++ ) {
+			$out[] = $a[$i][$prop];
+		}
+
+		return $out;
 	}
 }
