@@ -29,7 +29,7 @@ Usage
 Once the extension is installed, simply use it in your code by  :
 
 ```php
-<?= \snickom\datatables\DynamicTable::widget([
+<?= \snickom\datatables\widgets\DynamicTable::widget([
 	'id'=>'datatable-grid',
 	'db'=>[],
 	'title'=>Yii::t('app','Table'),

@@ -7,7 +7,7 @@
  * @version 1.0.0-dev
  */
 
-namespace snickom\datatables;
+namespace snickom\datatables\assets;
 
 use yii\web\AssetBundle;
 

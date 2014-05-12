@@ -7,7 +7,7 @@
  * @version 1.0.0-dev
  */
 
-namespace snickom\datatables;
+namespace snickom\datatables\widgets;
 
 use Yii;
 use yii\web\Response;

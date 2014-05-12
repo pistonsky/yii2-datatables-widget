@@ -19,15 +19,10 @@
                 "source": "https://github.com/snickom/yii2-datatables-widget"
         },
         "require": { 
-                "php": ">=5.4.0"
+                "php": ">=5.4.0",
+                "yiisoft/yii2": "*"
         },
         "autoload": {
-                "classmap": [
-                        "widgets/DynamicTable.php"
-                        "components/DatatableAssets.php",
-                ],
-                "files": [
-                        "components/DatatableAssets.php"
-                ]
+                "psr-4": { "snickom\\datatables\\": "" }
         }
 }
