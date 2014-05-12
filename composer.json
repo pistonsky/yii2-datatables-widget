@@ -24,7 +24,7 @@
         },
         "autoload": {
                 "psr-4": { 
-                        "snickom\\datatables\\components\\": "components/", 
+                        "snickom\\datatables\\assets\\": "assets/", 
                         "snickom\\datatables\\widgets\\": "widgets/" 
                 }
         }

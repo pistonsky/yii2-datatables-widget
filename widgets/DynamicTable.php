@@ -11,21 +11,18 @@ namespace snickom\datatables\widgets;
 
 use Yii;
 use yii\web\Response;
-use snickom\datatables\DatatableAsset;
+use snickom\datatables\assets\DatatableAsset;
 
 class DynamicTable extends \yii\base\Widget
 {
-	private $_config;
 	private $_view;
 
-	public function begin($config = [])
-	{
-		$this->_view = parent::getView();
-		parent::begin();
-	}
+	public $db;
 
 	public function run()
 	{
+		$this->_view = parent::getView();
+
 		if (self::getParam('sdt', false)) {
 			return self::request();
 		} else {
@@ -34,7 +31,8 @@ class DynamicTable extends \yii\base\Widget
 		}
 	}
 
-	static protected function request($data=[], $eval=[]) {
+	static protected function request($data=[], $eval=[]) 
+	{
 
 		Yii::$app->response->format = Response::FORMAT_JSONP;
 /*
