@@ -4,10 +4,10 @@
  * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>
  * @link https://github.com/snickom/yii2-datatables-widget
  * @package yii2-datatables-widget
- * @version 1.0.0-dev
+ * @version 1.0.0
  */
 
-namespace snickom\datatables\assets;
+namespace snickom\datatables;
 
 use yii\web\AssetBundle;
 

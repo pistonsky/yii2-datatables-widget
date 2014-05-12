@@ -4,14 +4,13 @@
  * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>
  * @link https://github.com/snickom/yii2-datatables-widget
  * @package yii2-datatables-widget
- * @version 1.0.0-dev
+ * @version 1.0.0
  */
 
-namespace snickom\datatables\widgets;
+namespace snickom\datatables;
 
 use Yii;
 use yii\web\Response;
-use snickom\datatables\assets\DatatableAsset;
 
 class DynamicTable extends \yii\base\Widget
 {
@@ -26,7 +25,7 @@ class DynamicTable extends \yii\base\Widget
 		if (self::getParam('sdt', false)) {
 			return self::request();
 		} else {
-			DatatableAsset::register($this->_view);
+			\snickom\datatables\DatatableAsset::register($this->_view);
 			return self::show();
 		}
 	}

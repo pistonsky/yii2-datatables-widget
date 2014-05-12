@@ -23,9 +23,6 @@
                 "yiisoft/yii2": "*"
         },
         "autoload": {
-                "psr-4": { 
-                        "snickom\\datatables\\assets\\": "assets/", 
-                        "snickom\\datatables\\widgets\\": "widgets/" 
-                }
+                "psr-4": { "snickom\\datatables\\": "" }
         }
 }
