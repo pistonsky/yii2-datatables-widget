@@ -18,6 +18,25 @@ class DynamicTable extends \yii\base\Widget
 	private static $_view;
 	private static $_settings;
 
+	public function init()
+	{
+	    parent::init();
+	    $this->registerTranslations();
+	}
+
+	public function registerTranslations()
+	{
+	    $i18n = Yii::$app->i18n;
+	    $i18n->translations['snickom/datatables/*'] = [
+	        'class' => 'yii\i18n\PhpMessageSource',
+	        'sourceLanguage' => 'en',
+	        'basePath' => '@vendor/snickom/datatables/messages',
+	        'fileMap' => [
+	            'snickom/datatables/widget' => 'widget.php',
+	        ],
+	    ];
+	}
+
 	public static function widget($config = [])
 	{
 		self::$_view = Yii::$app->getView();
@@ -35,7 +54,7 @@ class DynamicTable extends \yii\base\Widget
 			$config['length'] = -1;
 
 		if (!isset($config['title'])) 
-			$config['title'] = Yii::t('app','Table');
+			$config['title'] = Yii::t('snickom/datatables/widget','Table');
 
 		if (!isset($config['db']['primaryKey'])) 
 			$config['db']['primaryKey'] = 't.id';
@@ -57,7 +76,7 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => $config['db']['primaryKey'],
 				'dt' => str_replace('.', '__', $config['db']['primaryKey']), 
-				/*'title' => Yii::t('app','ID'), 
+				/*'title' => Yii::t('snickom/datatables/widget','ID'), 
 				'searchable' => true, 
 				'orderable' => true, 
 				'filter' => true*/
@@ -65,7 +84,7 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => 't.name',
 				'dt' => 't__name',
-				/*'title' => Yii::t('app','Name'), 
+				/*'title' => Yii::t('snickom/datatables/widget','Name'), 
 				'searchable' => true, 
 				'orderable' => true, 
 				'filter' => true*/
@@ -78,6 +97,9 @@ class DynamicTable extends \yii\base\Widget
 
 		if (!isset($config['html'])) 
 			$config['html'] = [];
+
+		if (!isset($config['html']['class'])) 
+			$config['html']['class'] = 'table';
 
 		if (!isset($config['html']['header'])) 
 			$config['html']['header'] = '<div class="panel panel-default"><div class="panel-heading"><h6 class="panel-title"><i class="icon-table"></i> '.$config['title'].'</h6></div><div  id="'.$config['id'].'_parent" class="datatable-generated">';
@@ -168,7 +190,7 @@ class DynamicTable extends \yii\base\Widget
 		                }
 		            } 
 
-			cacheLower = requestStart;
+		            cacheLower = requestStart;
 		            cacheUpper = requestStart + (requestLength * conf.pages);
 
 		            request.start = requestStart;
@@ -225,6 +247,22 @@ class DynamicTable extends \yii\base\Widget
 		    } );
 		} );
 
+		function filterGlobal () {
+		    $('#".self::$_settings['id']."').DataTable().search(
+		        $('#".self::$_settings['id']."_global_filter').val(),
+		        $('#".self::$_settings['id']."_global_regex').prop('checked'),
+		        $('#".self::$_settings['id']."_global_smart').prop('checked')
+		    ).draw();
+		}
+		 
+		function filterColumn ( i ) {
+		    $('#".self::$_settings['id']."').DataTable().column( i ).search(
+		        $('#".self::$_settings['id']."_col'+i+'_filter').val(),
+		        $('#".self::$_settings['id']."_col'+i+'_regex').prop('checked'),
+		        $('#".self::$_settings['id']."_col'+i+'_smart').prop('checked')
+		    ).draw();
+		}
+
 		$(document).ready(function() {
 
     			var selected = [];
@@ -233,12 +271,87 @@ class DynamicTable extends \yii\base\Widget
 			var rails_csrf_param_obj = {};
 			rails_csrf_param_obj[rails_csrf_param] = rails_csrf_token;
 
-		        	var ".$jsId." = $('#".self::$_settings['id']."').dataTable( {
-			            'bJQueryUI': false,
-			            'bAutoWidth': false,
+		        	var ".$jsId." = $('#".self::$_settings['id']."').DataTable( {
+		        		'paging': true,
+		        		'searching': true,
+		        		'ordering': true,
+		        		'info': true,
+/* 
+				'scrollX': true,  // th, td { white-space: nowrap; }
+*/
+				'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'All']],
+				'language': {
+					'decimal': ',',
+					'thousands': ' ',
+					'lengthMenu': 'Display _MENU_ records per page',
+					'zeroRecords': 'Nothing found - sorry',
+					'info': 'Showing page _PAGE_ of _PAGES_ (_START_ - _END_ / _TOTAL_)',
+					'infoEmpty': 'No records available',
+					'infoFiltered': '(filtered from _MAX_ total records)',
+					'processing': 'Please wait...',
+					'infoPostFix': '',
+					'search': 'Search',
+					'url': '',
+					'paginate': {
+						'first':    'First',
+						'previous': 'Back',
+						'next':     'Next',
+						'last':     'Last'
+					}
+				}, 
+/* 
+		        		'stateSave': false,
+				'stateSaveCallback': function (settings, data) {
+					// Send an Ajax request to the server with the state object
+					$.ajax( {
+						'url': '/state_save',
+						'data': data,
+						'dataType': 'json',
+						'method': 'POST',
+						'success': function () {}
+					} ); 
+				},
+				'stateLoadCallback': function (settings) {
+					var o;
+
+					// Send an Ajax request to the server to get the data. Note that
+					// this is a synchronous request since the data is expected back from the
+					// function
+					$.ajax( {
+						'url': '/state_load',
+						'async': false,
+						'dataType': 'json',
+						'success': function (json) {
+							o = json;
+						}
+					} );
+
+					return o;
+				},
+
+				'createdRow': function ( row, data, index ) {
+					if ( data[5].replace(/[\/$,]/g, '') * 1 > 4000 ) { $('td', row).eq(5).addClass('highlight'); }
+				},
+
+				'footerCallback': function( row, data, start, end, display ) {            
+					var api = this.api();            
+					// $( api.column( 4 ).footer() ).html('$0 ( $0 total)');
+				},
+				'headerCallback': function( thead, data, start, end, display ) {
+					$(thead).find('th').eq(0).html( 'Displaying '+(end-start)+' records' );
+				},
+				'drawCallback': function( settings ) {
+					alert( 'DataTables has redrawn the table' );        
+					var api = this.api();
+ 
+					// Output the data for the visible rows to the browser's console
+					console.log( api.rows( {page:'current'} ).data() );
+				},
+*/ 
+
         				'deferRender': true,
-			            'sPaginationType': 'full_numbers',
-			            'sDom': '<\'datatable-header\'fl><\'datatable-scroll\'rt><\'datatable-footer\'ip>',
+			            'pagingType': 'full_numbers',
+			            'dom': '<\'datatable-header\'fl><\'datatable-scroll\'rt><\'datatable-footer\'ip>',
 			            'processing': true,
 			            'serverSide': true,
 			            'ajax': $.fn.dataTable.pipeline( {
@@ -247,18 +360,17 @@ class DynamicTable extends \yii\base\Widget
 					'dataType': 'jsonp',
 					'data': function ( d ) { d = $.extend(d, rails_csrf_param_obj); },
 					'pages': 5 
-				} ),
-				 'columns': [
-					{
+				}),
+				'columns': [
+					/* {
 						'class': 'details-control',
-						'orderable': false,
-						'data': null,
-						'defaultContent': ''
-					},
-					{ 'data': 't__id' },
+						'data': 't__id',
+						'defaultContent': '+'
+					}, */
+					{ 'data': 't__id', 'type': 'numeric' },
 					{ 'data': 't__name' }
 				],         
-				'order': [[1, 'asc']],
+				'order': [[1, 'asc'],[0, 'desc']],
 				'rowCallback': function( row, data, displayIndex ) {
 				    if ( $.inArray(data.DT_RowId, selected) !== -1 ) {
 				        $(row).addClass('selected');
@@ -268,11 +380,14 @@ class DynamicTable extends \yii\base\Widget
 
 			// Array to track the ids of the details displayed rows
 			var detailRows = [];
-
 			$('#".self::$_settings['id']." tbody').on( 'click', 'tr td:first-child', function () {
 			    var tr = $(this).parents('tr');
 
-			    var row = ".$jsId.".api( true ).row( tr );
+			    if (!!".$jsId.".api) {
+			    	var row = ".$jsId.".api( true ).row( tr );
+			    } else {
+			    	var row = ".$jsId.".row( tr );
+			    }
 			    var idx = $.inArray( tr.attr('id'), detailRows );
 
 			    if ( row.child.isShown() ) {
@@ -313,10 +428,86 @@ class DynamicTable extends \yii\base\Widget
 
 			    $(this).parent().toggleClass('selected');
 			});
+
+			$('a.".self::$_settings['id']."-toggle-vis').on( 'click', function (e) { // <a class=".self::$_settings['id']."toggle-vis data-column=0>Name</a>
+			    e.preventDefault();
+
+			    // Get the column API object
+			    var column = ".$jsId.".column( $(this).attr('data-column') );
+
+			    // Toggle the visibility
+			    column.visible( ! column.visible() );
+			} );
+ 
+			$('input.".self::$_settings['id']."_global_filter').on( 'keyup click', function () {
+			    filterGlobal();
+			} );
+
+			$('input.".self::$_settings['id']."_column_filter').on( 'keyup click', function () {
+			    filterColumn( $(this).parents('tr').attr('data-column') );
+			} );
+
 		});");
 		
+		/*
+<table style="width: 67%; margin: 0 auto 2em auto;" border="0" cellpadding="3" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Target</th>
+                <th>Filter text</th>
+                <th>Treat as regex</th>
+                <th>Use smart filter</th>
+            </tr>
+        </thead>
+ 
+        <tbody>
+            <tr id="filter_global">
+                <td>Global filtering</td>
+                <td align="center"><input class="global_filter" id="global_filter" type="text"></td>
+                <td align="center"><input class="global_filter" id="global_regex" type="checkbox"></td>
+                <td align="center"><input class="global_filter" id="global_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col1" data-column="0">
+                <td>Column - Name</td>
+                <td align="center"><input class="column_filter" id="col0_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col0_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col0_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col2" data-column="1">
+                <td>Column - Position</td>
+                <td align="center"><input class="column_filter" id="col1_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col1_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col1_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col3" data-column="2">
+                <td>Column - Office</td>
+                <td align="center"><input class="column_filter" id="col2_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col2_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col2_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col4" data-column="3">
+                <td>Column - Age</td>
+                <td align="center"><input class="column_filter" id="col3_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col3_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col3_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col5" data-column="4">
+                <td>Column - Start date</td>
+                <td align="center"><input class="column_filter" id="col4_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col4_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col4_smart" checked="checked" type="checkbox"></td>
+            </tr>
+            <tr id="filter_col6" data-column="5">
+                <td>Column - Salary</td>
+                <td align="center"><input class="column_filter" id="col5_filter" type="text"></td>
+                <td align="center"><input class="column_filter" id="col5_regex" type="checkbox"></td>
+                <td align="center"><input class="column_filter" id="col5_smart" checked="checked" type="checkbox"></td>
+            </tr>
+        </tbody>
+    </table>
+		 */
 
-		$return = self::$_settings['html']['header'].'<table class="table" id="'.self::$_settings['id'].'"><thead><tr>';
+		$return = self::$_settings['html']['header'].'<table class="'.self::$_settings['html']['class'].'" id="'.self::$_settings['id'].'" cellspacing="0" width="100%"><thead><tr>';
                         foreach (self::$_settings['db']['columns'] as $key => $value) {
                             $return .= '<th>'; 
                             if (isset($value['options'])) 
