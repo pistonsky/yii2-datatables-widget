@@ -89,7 +89,13 @@ class DynamicTable extends \yii\base\Widget
 
 		if (self::getParam('callback', false)) {
 			Yii::$app->response->format = Response::FORMAT_JSONP;
-			echo json_encode(self::request());
+
+			header('Content-Type: text/javascript; charset=utf8');
+			header('Access-Control-Allow-Origin: '.Yii::$app->request->getUrl());
+			header('Access-Control-Max-Age: '.(60*60));
+			header('Access-Control-Allow-Methods: GET, POST'); // GET, POST, PUT, DELETE
+
+			echo self::getParam('callback').'('.json_encode(self::request()).');';
 			exit();
 		} else {
 			DatatableAsset::register(self::$_view);
@@ -103,40 +109,209 @@ class DynamicTable extends \yii\base\Widget
 		$jsId = str_replace(['-'],['_'],self::$_settings['id']);
 
 		self::$_view->registerJs("var ".$jsId."; 
+		//
+		// Pipelining function for DataTables. To be used to the `ajax` option of DataTables
+		//
+		$.fn.dataTable.pipeline = function ( opts ) {
+		    // Configuration options
+		    var conf = $.extend( {
+		        pages: 5,     // number of pages to cache
+		        url: '',      // script url
+		        data: null,   // function or object with parameters to send to the server
+		                      // matching how `ajax.data` works in DataTables
+		        dataType: 'jsonp',
+		        type: 'POST' // Ajax HTTP method
+		    }, opts );
+		 
+		    // Private variables for storing the cache
+		    var cacheFixLower = 0;
+		    var cacheLower = -1;
+		    var cacheUpper = null;
+		    var cacheLastRequest = null;
+		    var cacheLastJson = null;
+		 
+		    return function ( request, drawCallback, settings ) {
+		        var ajax          = false;
+		        var requestStart  = request.start;
+		        var requestLength = request.length;
+		        var requestEnd    = requestStart + requestLength;
+	
+		        if ( settings.clearCache ) {
+		            // API requested that the cache be cleared
+		            ajax = true;
+		            settings.clearCache = false;
+		        } else if ( cacheLower < 0 || requestStart < cacheLower || requestEnd > cacheUpper ) {
+		            // outside cached data - need to make a request
+		            ajax = true;
+		        } else if ( JSON.stringify( request.order )   !== JSON.stringify( cacheLastRequest.order ) ||
+		                  JSON.stringify( request.columns ) !== JSON.stringify( cacheLastRequest.columns ) ||
+		                  JSON.stringify( request.search )  !== JSON.stringify( cacheLastRequest.search )
+		        ) {
+		            // properties changed (ordering, columns, searching)
+		            ajax = true;
+		        }
+		         
+		        // Store the request for checking next time around
+		        cacheLastRequest = $.extend( true, {}, request );
+		 
+		        if ( ajax ) {
+		            // Need data from the server
+
+		            if ( requestStart < cacheLower ) {
+
+		                requestStart = requestStart - (requestLength*(conf.pages-1));
+		 
+		                if ( requestStart < 0 ) {
+		                    requestStart = 0;
+		                } else {
+		                    cacheFixLower = requestStart + (requestLength*(conf.pages-1));
+		                }
+		            } 
+
+			cacheLower = requestStart;
+		            cacheUpper = requestStart + (requestLength * conf.pages);
+
+		            request.start = requestStart;
+		            request.length = requestLength*conf.pages;
+		 
+		            // Provide the same `data` options as DataTables.
+		            if ( $.isFunction ( conf.data ) ) {
+		                // As a function it is executed with the data object as an arg
+		                // for manipulation. If an object is returned, it is used as the
+		                // data object to submit
+		                var d = conf.data( request );
+		                if ( d ) {
+		                    $.extend( request, d );
+		                }
+		            } else if ( $.isPlainObject( conf.data ) ) {
+		                // As an object, the data given extends the default
+		                $.extend( request, conf.data );
+		            }
+		 
+		            settings.jqXHR = $.ajax( {
+		                'type':     conf.type,
+		                'url':      conf.url,
+		                'data':     request,
+		                'dataType': conf.dataType,
+		                'cache':    false,
+		                'success':  function ( json ) {
+		                    cacheLastJson = $.extend(true, {}, json);
+		
+		                    if ( cacheLower != requestStart || cacheFixLower > 0) {
+		                        if (cacheFixLower > 0) json.data.splice( 0, cacheFixLower ); 
+		                        else json.data.splice( 0, requestStart-cacheLower );
+		                    }
+
+		                    json.data.splice( requestLength, json.data.length );
+		        	
+		                    drawCallback( json );
+		                }
+		            } );
+		        } else {
+		            json = $.extend( true, {}, cacheLastJson );
+		            json.draw = request.draw; // Update the echo for each response
+		            json.data.splice( 0, requestStart-cacheLower );
+		            json.data.splice( requestLength, json.data.length );
+		            drawCallback(json);
+		        }
+		    }
+		};
+
+		// Register an API method that will empty the pipelined data, forcing an Ajax
+		// fetch on the next draw (i.e. `table.clearPipeline().draw()`)
+		$.fn.dataTable.Api.register( 'clearPipeline()', function () {
+		    return this.iterator( 'table', function ( settings ) {
+		        settings.clearCache = true;
+		    } );
+		} );
+
 		$(document).ready(function() {
 
+    			var selected = [];
 			var rails_csrf_token = $('meta[name=csrf-token]').attr('content');
 			var rails_csrf_param = $('meta[name=csrf-param]').attr('content');
-
 			var rails_csrf_param_obj = {};
 			rails_csrf_param_obj[rails_csrf_param] = rails_csrf_token;
 
-			var asInitVals = new Array();
-			var aoColumns = ".json_encode(self::$_settings['db']['columns']).";
-
-		        	var ".$jsId."_first = false;
 		        	var ".$jsId." = $('#".self::$_settings['id']."').dataTable( {
 			            'bJQueryUI': false,
 			            'bAutoWidth': false,
+        				'deferRender': true,
 			            'sPaginationType': 'full_numbers',
 			            'sDom': '<\'datatable-header\'fl><\'datatable-scroll\'rt><\'datatable-footer\'ip>',
 			            'processing': true,
 			            'serverSide': true,
-			            'ajax': {
-				    'url': '".((isset(self::$_settings['ajax']) && !empty(self::$_settings['ajax'])) ? self::$_settings['ajax'] : Yii::$app->request->getUrl())."',
-				    'type': 'POST', 
-				    'dataType': 'jsonp',
-				    'data': function ( d ) { d = $.extend(d, rails_csrf_param_obj); }
-				},
+			            'ajax': $.fn.dataTable.pipeline( {
+					'url': '".((isset(self::$_settings['ajax']) && !empty(self::$_settings['ajax'])) ? self::$_settings['ajax'] : Yii::$app->request->getUrl())."',
+					'type': 'POST', 
+					'dataType': 'jsonp',
+					'data': function ( d ) { d = $.extend(d, rails_csrf_param_obj); },
+					'pages': 5 
+				} ),
 				 'columns': [
+					{
+						'class': 'details-control',
+						'orderable': false,
+						'data': null,
+						'defaultContent': ''
+					},
 					{ 'data': 't__id' },
 					{ 'data': 't__name' }
-				], 
+				],         
+				'order': [[1, 'asc']],
 				'rowCallback': function( row, data, displayIndex ) {
 				    if ( $.inArray(data.DT_RowId, selected) !== -1 ) {
 				        $(row).addClass('selected');
 				    }
 				}
+			});
+
+			// Array to track the ids of the details displayed rows
+			var detailRows = [];
+
+			$('#".self::$_settings['id']." tbody').on( 'click', 'tr td:first-child', function () {
+			    var tr = $(this).parents('tr');
+
+			    var row = ".$jsId.".api( true ).row( tr );
+			    var idx = $.inArray( tr.attr('id'), detailRows );
+
+			    if ( row.child.isShown() ) {
+			        tr.removeClass( 'details' );
+			        row.child.hide();
+
+			        // Remove from the 'open' array
+			        detailRows.splice( idx, 1 );
+			    } else {
+			        tr.addClass( 'details' );
+			        if (typeof row.data() != 'undefined') {
+				        row.child( 'Loading ...' ).show();
+
+				        // Add to the 'open' array
+				        if ( idx === -1 ) {
+				            detailRows.push( tr.attr('id') );
+				        }
+			        }
+			    }
+			} );
+
+			// On each draw, loop over the `detailRows` array and show any child rows
+			".$jsId.".on( 'draw', function () {
+			    $.each( detailRows, function ( i, id ) {
+			        $('#'+id+':not(.details) td:first-child').trigger( 'click' );
+			    } );
+			} );
+
+			$('#".self::$_settings['id']." tbody').on('click', 'tr td:not(:first-child)', function () {
+			    var id = $(this).parent().attr('id');
+			    var index = $.inArray(id, selected);
+
+			    if ( index === -1 ) {
+			        selected.push( id );
+			    } else {
+			        selected.splice( index, 1 );
+			    }
+
+			    $(this).parent().toggleClass('selected');
 			});
 		});");
 		
@@ -226,17 +401,19 @@ class DynamicTable extends \yii\base\Widget
                         		$return .= '<th></th>'; 
                         	}
                         }
-                        $return .= '</tr></tfoot><tbody>';
+                        $return .= '</tr></tfoot>';
 		if (isset(self::$_settings['html']['data'])) {
+			echo '<tbody>';
 			foreach (self::$_settings['html']['data'] as $k => $v) {
-                        		$return .= '<tr id="'.$k.'">';
+                        		$return .= '<tr id="row_'.$k.'">';
                         		foreach ($v as $prm => $opt) {
 					$return .= '<td'.(isset($opt['class']) ? ' class="'.$opt['class'].'"' : '').'>'.(isset($opt['value']) ? $opt['value'] : '&nbsp;').'</td>';
                         		}
                         		$return .= '</tr>';
 			}
+			echo '</tbody>';
 		}
-		$return .='</tbody></table>'.self::$_settings['html']['footer'];
+		$return .='</table>'.self::$_settings['html']['footer'];
 		return $return;
 	}
 
@@ -302,7 +479,9 @@ class DynamicTable extends \yii\base\Widget
 		$out = [];
 
 		for ( $i=0, $ien=count($data) ; $i<$ien ; $i++ ) {
-			$row = [];
+			$row = [
+				'DT_RowId' => 'row_'.$data[$i][ str_replace('.','__',self::$_settings['db']['primaryKey']) ]
+			];
 
 			for ( $j=0, $jen=count($columns) ; $j<$jen ; $j++ ) {
 				$column = $columns[$j];
@@ -312,8 +491,7 @@ class DynamicTable extends \yii\base\Widget
 				// Is there a formatter?
 				if ( isset( $column['formatter'] ) ) {
 					$row[ $column_db ] = $column['formatter']( $data[$i][ $column_db ], $data[$i] );
-				}
-				else {
+				} else {
 					$row[ $column_db ] = $data[$i][ $column_db ];
 				}
 			}
