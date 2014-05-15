@@ -11,6 +11,8 @@ namespace snickom\datatables;
 
 use Yii;
 use yii\web\Response;
+use yii\helpers\Html;
+use yii\helpers\Url;
 use snickom\datatables\DatatableAsset;
 
 class DynamicTable extends \yii\base\Widget
@@ -39,28 +41,37 @@ class DynamicTable extends \yii\base\Widget
 
 	public static function widget($config = [])
 	{
+
+		if (!file_exists(Yii::getAlias('@runtime').'/eval/')) mkdir(Yii::getAlias('@runtime').'/eval/');
+
 		self::$_view = Yii::$app->getView();
 
 		if (!isset($config['db'])) 
 			return false;
 
+		if (!isset($config['dt'])) 
+			$config['dt'] = [];
+
 		if (!isset($config['id'])) 
 			$config['id'] = 'datatable-grid';
-
-		if (!isset($config['start'])) 
-			$config['start'] = 0;
-
-		if (!isset($config['length'])) 
-			$config['length'] = -1;
 
 		if (!isset($config['title'])) 
 			$config['title'] = Yii::t('snickom/datatables/widget','Table');
 
+		if (!isset($config['dt']['length'])) 
+			$config['dt']['length'] = 25;
+
+		if (!isset($config['dt']['sDom'])) 
+			$config['dt']['sDom'] =  '<\'datatable-header\'fl><\'datatable-scroll\'rt><\'datatable-footer\'ip>';
+
+		if (!isset($config['dt']['order'])) 
+			$config['dt']['order'] = [[0, 'asc']];
+
+		if (!isset($config['dt']['lengthMenu'])) 
+			$config['dt']['lengthMenu'] = [[10, 25, 50, 100], [10, 25, 50, 100]];
+
 		if (!isset($config['db']['primaryKey'])) 
 			$config['db']['primaryKey'] = 't.id';
-
-		if (!isset($config['db']['select'])) 
-			$config['db']['select'] = 't.*';
 
 		if (!isset($config['db']['condition'])) 
 			$config['db']['condition'] = '';
@@ -76,21 +87,33 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => $config['db']['primaryKey'],
 				'dt' => str_replace('.', '__', $config['db']['primaryKey']), 
-				/*'title' => Yii::t('snickom/datatables/widget','ID'), 
-				'searchable' => true, 
+				'title' => Yii::t('snickom/datatables/widget','ID'), 
+				/*'searchable' => true, 
 				'orderable' => true, 
-				'filter' => true*/
+				'filter' => []*/
 			],
 			[
 				'db' => 't.name',
 				'dt' => 't__name',
-				/*'title' => Yii::t('snickom/datatables/widget','Name'), 
-				'searchable' => true, 
+				'title' => Yii::t('snickom/datatables/widget','Name'), 
+				/*'searchable' => true, 
 				'orderable' => true, 
-				'filter' => true*/
+				'filter' => []*/
+			],
+			[
+				'db' => $config['db']['primaryKey'],
+				'dt' => 'options',
+				'title' => Yii::t('snickom/datatables/widget','Options'), 
+				'opt' => ['view','update','delete'], 
+				/*'searchable' => true, 
+				'orderable' => true, 
+				'filter' => []*/
 			]
 		];
 
+		$tmp = self::pluck( $config['db']['columns'], 'db' );
+		$config['db']['primaryKeyAlias'] = $config['db']['columns'][array_search($config['db']['primaryKey'], $tmp)]['dt'];
+		 
 		$config['ajax_delimiter'] = ((strpos(Yii::$app->request->getUrl(), '?') !== false) ? '&' : '?');
 		if (isset($config['ajax']) && !empty($config['ajax'])) 
 			$config['ajax_delimiter'] = ((strpos($config['ajax'], '?') !== false) ? '&' : '?');
@@ -129,6 +152,29 @@ class DynamicTable extends \yii\base\Widget
 	{
 		
 		$jsId = str_replace(['-'],['_'],self::$_settings['id']);
+
+		if (isset(self::$_settings['dt']['scrollX']) && self::$_settings['dt']['scrollX']) 
+			self::$_view->registerCss("#".self::$_settings['id']." th, #".self::$_settings['id']." td { white-space: nowrap; }"); 
+
+		$jsColTmp = '';
+		foreach (self::$_settings['db']['columns'] as $key => $value) {
+
+			if (!empty($jsColTmp)) $jsColTmp .= ',';
+
+			$jsColTmp .= '{';
+			$jsColTmp .= "'data': ".(!empty($value['dt']) ? "'".$value['dt']."'" : 'null');
+
+			if (isset($value['type']) && !empty($value['type'])) 
+				$jsColTmp .= ",'type': '".$value['type']."'";
+
+			if (isset($value['class']) && !empty($value['class'])) 
+				$jsColTmp .= ",'class': '".$value['class']."'";
+
+			if (isset($value['defaultContent']) && !empty($value['defaultContent'])) 
+				$jsColTmp .= ",'defaultContent': '".$value['defaultContent']."'";
+
+			$jsColTmp .= '}';
+                        }
 
 		self::$_view->registerJs("var ".$jsId."; 
 		//
@@ -272,86 +318,70 @@ class DynamicTable extends \yii\base\Widget
 			rails_csrf_param_obj[rails_csrf_param] = rails_csrf_token;
 
 		        	var ".$jsId." = $('#".self::$_settings['id']."').DataTable( {
-		        		'paging': true,
-		        		'searching': true,
-		        		'ordering': true,
-		        		'info': true,
-/* 
-				'scrollX': true,  // th, td { white-space: nowrap; }
-*/
-				'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'All']],
+		        		'paging': ".((!isset(self::$_settings['dt']['paging']) || self::$_settings['dt']['paging']) ? 'true' : 'false').", 
+		        		'searching': ".((!isset(self::$_settings['dt']['searching']) || self::$_settings['dt']['searching']) ? 'true' : 'false').", 
+		        		'ordering': ".((!isset(self::$_settings['dt']['ordering']) || self::$_settings['dt']['ordering']) ? 'true' : 'false').", 
+		        		'info': ".((!isset(self::$_settings['dt']['info']) || self::$_settings['dt']['info']) ? 'true' : 'false').", 
+				'scrollX': ".((isset(self::$_settings['dt']['scrollX']) && self::$_settings['dt']['scrollX']) ? 'true' : 'false').", 
+				'lengthMenu': ".json_encode(self::$_settings['dt']['lengthMenu']).",
+				'pageLength': ".intval(self::$_settings['dt']['length']).",
 				'language': {
-					'decimal': ',',
-					'thousands': ' ',
-					'lengthMenu': 'Display _MENU_ records per page',
-					'zeroRecords': 'Nothing found - sorry',
-					'info': 'Showing page _PAGE_ of _PAGES_ (_START_ - _END_ / _TOTAL_)',
-					'infoEmpty': 'No records available',
-					'infoFiltered': '(filtered from _MAX_ total records)',
-					'processing': 'Please wait...',
+					'decimal': '".(isset(self::$_settings['dt']['decimal']) ? self::$_settings['dt']['decimal'] : ',')."',
+					'thousands': '".(isset(self::$_settings['dt']['thousands']) ? self::$_settings['dt']['thousands'] : ' ')."',
+					'lengthMenu': '".Yii::t('snickom/datatables/widget','Display _MENU_ records per page')."',
+					'zeroRecords': '".Yii::t('snickom/datatables/widget','Nothing found - sorry')."',
+					'info': '".Yii::t('snickom/datatables/widget','Showing page from _START_ to _END_ from _TOTAL_)')."',
+					'infoEmpty': '".Yii::t('snickom/datatables/widget','No records available')."',
+					'infoFiltered': '".Yii::t('snickom/datatables/widget','(filtered from _MAX_ total records)')."',
+					'processing': '".Yii::t('snickom/datatables/widget','Please wait...')."',
 					'infoPostFix': '',
-					'search': 'Search',
+					'search': '".Yii::t('snickom/datatables/widget','Search')."',
 					'url': '',
 					'paginate': {
-						'first':    'First',
-						'previous': 'Back',
-						'next':     'Next',
-						'last':     'Last'
+						'first':    '".Yii::t('snickom/datatables/widget','First')."',
+						'previous': '".Yii::t('snickom/datatables/widget','Back')."',
+						'next':     '".Yii::t('snickom/datatables/widget','Next')."',
+						'last':     '".Yii::t('snickom/datatables/widget','Last')."'
 					}
 				}, 
-/* 
-		        		'stateSave': false,
-				'stateSaveCallback': function (settings, data) {
-					// Send an Ajax request to the server with the state object
-					$.ajax( {
-						'url': '/state_save',
-						'data': data,
-						'dataType': 'json',
-						'method': 'POST',
-						'success': function () {}
-					} ); 
-				},
-				'stateLoadCallback': function (settings) {
-					var o;
-
-					// Send an Ajax request to the server to get the data. Note that
-					// this is a synchronous request since the data is expected back from the
-					// function
-					$.ajax( {
-						'url': '/state_load',
-						'async': false,
-						'dataType': 'json',
-						'success': function (json) {
-							o = json;
-						}
-					} );
-
-					return o;
-				},
-
+				".(isset(self::$_settings['dt']['stateSave']) ? "
+		        		'stateSave': true,".
+				(isset(self::$_settings['dt']['stateSave']['save']) ? "
+				'stateSaveCallback': function (settings, data) {".self::$_settings['dt']['stateSave']['save']."},
+				" : '').
+				(isset(self::$_settings['dt']['stateSave']['load']) ? "
+				'stateLoadCallback': function (settings) {".self::$_settings['dt']['stateSave']['load']."},
+				" : '') : "
+				'stateSave': false,
+				")."
 				'createdRow': function ( row, data, index ) {
-					if ( data[5].replace(/[\/$,]/g, '') * 1 > 4000 ) { $('td', row).eq(5).addClass('highlight'); }
+					".((isset(self::$_settings['dt']['createdRow']) && !empty(self::$_settings['dt']['createdRow'])) ? self::$_settings['dt']['createdRow'] : '')."
 				},
-
 				'footerCallback': function( row, data, start, end, display ) {            
 					var api = this.api();            
 					// $( api.column( 4 ).footer() ).html('$0 ( $0 total)');
+					".((isset(self::$_settings['dt']['footerCallback']) && !empty(self::$_settings['dt']['footerCallback'])) ? self::$_settings['dt']['footerCallback'] : '')."
 				},
 				'headerCallback': function( thead, data, start, end, display ) {
-					$(thead).find('th').eq(0).html( 'Displaying '+(end-start)+' records' );
-				},
-				'drawCallback': function( settings ) {
-					alert( 'DataTables has redrawn the table' );        
 					var api = this.api();
- 
-					// Output the data for the visible rows to the browser's console
-					console.log( api.rows( {page:'current'} ).data() );
+					// $(thead).find('th').eq(0).html( 'Displaying '+(end-start)+' records' );
+					".((isset(self::$_settings['dt']['headerCallback']) && !empty(self::$_settings['dt']['headerCallback'])) ? self::$_settings['dt']['headerCallback'] : '')."
 				},
-*/ 
+				'drawCallback': function( settings ) {  
+					var api = this.api();
+ 					// console.log( api.rows( {page:'current'} ).data() );
+					".((isset(self::$_settings['dt']['drawCallback']) && !empty(self::$_settings['dt']['drawCallback'])) ? self::$_settings['dt']['drawCallback'] : '')."
+				},
+				'rowCallback': function( row, data, displayIndex ) {
+				    if ( $.inArray(data.DT_RowId, selected) !== -1 ) {
+				        $(row).addClass('selected');
+				    }
+				    ".((isset(self::$_settings['dt']['rowCallback']) && !empty(self::$_settings['dt']['rowCallback'])) ? self::$_settings['dt']['rowCallback'] : '')."
+				},
 
         				'deferRender': true,
 			            'pagingType': 'full_numbers',
-			            'dom': '<\'datatable-header\'fl><\'datatable-scroll\'rt><\'datatable-footer\'ip>',
+			            'dom': '".addslashes(self::$_settings['dt']['sDom'])."',
 			            'processing': true,
 			            'serverSide': true,
 			            'ajax': $.fn.dataTable.pipeline( {
@@ -359,25 +389,13 @@ class DynamicTable extends \yii\base\Widget
 					'type': 'POST', 
 					'dataType': 'jsonp',
 					'data': function ( d ) { d = $.extend(d, rails_csrf_param_obj); },
-					'pages': 5 
+					'pages': '".((isset(self::$_settings['dt']['pipelinePages']) && !empty(self::$_settings['dt']['pipelinePages'])) ? self::$_settings['dt']['pipelinePages'] : 1)."' 
 				}),
-				'columns': [
-					/* {
-						'class': 'details-control',
-						'data': 't__id',
-						'defaultContent': '+'
-					}, */
-					{ 'data': 't__id', 'type': 'numeric' },
-					{ 'data': 't__name' }
-				],         
-				'order': [[1, 'asc'],[0, 'desc']],
-				'rowCallback': function( row, data, displayIndex ) {
-				    if ( $.inArray(data.DT_RowId, selected) !== -1 ) {
-				        $(row).addClass('selected');
-				    }
-				}
+				'columns': [".$jsColTmp."],         
+				'order': ".json_encode(self::$_settings['dt']['order']).", 
 			});
 
+			".((isset(self::$_settings['detail']) && self::$_settings['detail']) ? "
 			// Array to track the ids of the details displayed rows
 			var detailRows = [];
 			$('#".self::$_settings['id']." tbody').on( 'click', 'tr td:first-child', function () {
@@ -399,7 +417,16 @@ class DynamicTable extends \yii\base\Widget
 			    } else {
 			        tr.addClass( 'details' );
 			        if (typeof row.data() != 'undefined') {
-				        row.child( 'Loading ...' ).show();
+				        row.child( '".Yii::t('snickom/datatables/widget','Loading ...')."' ).show();
+				        var dataRow = row.data();
+				        $.ajax({
+					type: 'GET',
+					url: '".((isset(self::$_settings['detail']['ajax']) && !empty(self::$_settings['ajax'])) ? self::$_settings['ajax'] : '?detail=')."'+dataRow.".self::$_settings['db']['primaryKeyAlias'].",
+				        }).done(function( msg ) {
+				        	row.child( msg ).show();
+				        }).fail(function( jqXHR, textStatus ) {
+					row.child( '".Yii::t('snickom/datatables/widget','Request failed:')."' + textStatus ).show();
+				        });
 
 				        // Add to the 'open' array
 				        if ( idx === -1 ) {
@@ -415,8 +442,10 @@ class DynamicTable extends \yii\base\Widget
 			        $('#'+id+':not(.details) td:first-child').trigger( 'click' );
 			    } );
 			} );
+ 			" : '')."
 
-			$('#".self::$_settings['id']." tbody').on('click', 'tr td:not(:first-child)', function () {
+			".((isset(self::$_settings['selector']) && self::$_settings['selector']) ? "
+			$('#".self::$_settings['id']." tbody').on('click', 'tr td".((isset(self::$_settings['detail']) && self::$_settings['detail']) ? ":not(:first-child)" : '')."', function () {
 			    var id = $(this).parent().attr('id');
 			    var index = $.inArray(id, selected);
 
@@ -428,8 +457,10 @@ class DynamicTable extends \yii\base\Widget
 
 			    $(this).parent().toggleClass('selected');
 			});
+ 			" : '')."
 
-			$('a.".self::$_settings['id']."-toggle-vis').on( 'click', function (e) { // <a class=".self::$_settings['id']."toggle-vis data-column=0>Name</a>
+			$('a.".self::$_settings['id']."-toggle-vis').on( 'click', function (e) { 
+			    // <a class=".self::$_settings['id']."toggle-vis data-column=0>Name</a>
 			    e.preventDefault();
 
 			    // Get the column API object
@@ -438,7 +469,7 @@ class DynamicTable extends \yii\base\Widget
 			    // Toggle the visibility
 			    column.visible( ! column.visible() );
 			} );
- 
+
 			$('input.".self::$_settings['id']."_global_filter').on( 'keyup click', function () {
 			    filterGlobal();
 			} );
@@ -586,8 +617,8 @@ class DynamicTable extends \yii\base\Widget
 	                        			$return .= '<th><input type="text" class="form-control" data-id="'.$key.'" data-name="'.$value['db'].'"></th>';
 	                        			break;
 	                        	}
-                        	} elseif (isset($value['options'])) {
-                        		$return .= '<th><button type="button" id="clearDTfilter">CLEAR</button></th>'; 
+                        	} elseif (isset($value['opt'])) {
+                        		$return .= '<th><button type="button" id="clearDTfilter">'.Yii::t('snickom/datatables/widget','Clear filter').'</button></th>'; 
                         	} else {
                         		$return .= '<th></th>'; 
                         	}
@@ -627,7 +658,7 @@ class DynamicTable extends \yii\base\Widget
 		$sTable = substr(Yii::$app->db->quoteValue(self::$_settings['db']['table']),1,-1);
 		$sColumns = [];
 		foreach (self::pluck(self::$_settings['db']['columns'], 'db') as $k => $v) {
-			$sColumns[] = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($v),1,-1)).'` as `'.str_replace('.','__',$v).'`';
+			$sColumns[] = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($v),1,-1)).'` as `'.self::$_settings['db']['columns'][$k]['dt'].'`';
 		}
 
 		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['condition']) ? (!empty($where) ? $where : 'WHERE').' '.self::$_settings['condition'] : $where)." ".$order;
@@ -670,17 +701,52 @@ class DynamicTable extends \yii\base\Widget
 		$out = [];
 
 		for ( $i=0, $ien=count($data) ; $i<$ien ; $i++ ) {
+
 			$row = [
-				'DT_RowId' => 'row_'.$data[$i][ str_replace('.','__',self::$_settings['db']['primaryKey']) ]
+				 'DT_RowId' => 'row_'.$data[$i][ self::$_settings['db']['primaryKeyAlias'] ]
 			];
 
 			for ( $j=0, $jen=count($columns) ; $j<$jen ; $j++ ) {
 				$column = $columns[$j];
 
-				$column_db = str_replace('.','__',$column['db']);
+				$column_db = $column['dt'];
 
+				// Is there a button set?
+				if (isset($column['opt'])) {
+					$row[ $column_db ] = '';
+					foreach ($column['opt'] as $ck => $cv) {
+						if (intval($ck) >= 0) {
+
+							if ($cv == 'view') {
+								$row[ $column_db ] .= ' '.Html::a(
+									'<span class="icon-info"></span>', 
+									Url::toRoute(['view', 'id' => $data[$i][ self::$_settings['db']['primaryKeyAlias']] ]), 
+									['title' => Yii::t('yii', 'View')] 
+								).' ';
+							} elseif ($cv == 'update') {
+								$row[ $column_db ] .= ' '.Html::a(
+									'<span class="icon-pencil"></span>', 
+									Url::toRoute(['update', 'id' => $data[$i][ self::$_settings['db']['primaryKeyAlias']] ]), 
+									['title' => Yii::t('yii', 'Update')] 
+								).' ';
+							} elseif ($cv == 'delete') {
+								$row[ $column_db ] .= ' '.Html::a(
+									'<span class="icon-remove"></span>', 
+									Url::toRoute(['delete', 'id' => $data[$i][ self::$_settings['db']['primaryKeyAlias']] ]), 
+									['title' => Yii::t('yii', 'Delete'), 'data-confirm' => Yii::t('yii', 'Are you sure to delete this item?'), 'data-method' => 'post'] 
+								).' ';
+							}
+
+						} else {
+							file_put_contents($tmp = Yii::getAlias('@runtime').'/eval/'.time().'-'.$ck, '<?php return "'.str_replace('"','\"',$cv).'"; ?>');
+							if (file_exists($tmp)) { 
+								$row[ $column_db ] .= include($tmp);
+								unlink($tmp);
+							}
+						}
+					}
 				// Is there a formatter?
-				if ( isset( $column['formatter'] ) ) {
+				} elseif ( isset( $column['formatter'] ) ) {
 					$row[ $column_db ] = $column['formatter']( $data[$i][ $column_db ], $data[$i] );
 				} else {
 					$row[ $column_db ] = $data[$i][ $column_db ];
@@ -707,7 +773,7 @@ class DynamicTable extends \yii\base\Widget
 	{
 		$limit = '';
 
-		if ( isset($request['start']) && $request['length'] != -1 ) {
+		if ( isset($request['start']) && intval($request['length']) > 0 ) {
 			$limit = "LIMIT ".intval($request['start']).", ".intval($request['length']);
 		}
 
@@ -785,10 +851,18 @@ class DynamicTable extends \yii\base\Widget
 				$columnIdx = array_search( $requestColumn['data'], $dtColumns );
 				$column = $columns[ $columnIdx ];
 
-				if ( $requestColumn['searchable'] == 'true' ) {
+				if ( $requestColumn['searchable'] == 'true' ) {					
 					$binding = self::bind( $bindings, '%'.$str.'%', PDO::PARAM_STR );
 					$colTmp = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($column['db']),1,-1)).'`';
 					$globalSearch[] = $colTmp." LIKE ".$binding;
+				}
+			}
+
+			if (isset(self::$_settings['db']['searchAnd']) && !empty(self::$_settings['db']['searchAnd'])) {
+				file_put_contents($tmp = Yii::getAlias('@runtime').'/eval/'.time().'-searchAnd', '<?php return "'.str_replace('"','\"',self::$_settings['db']['searchAnd']).'"; ?>');
+				if (file_exists($tmp)) { 
+					include($tmp);
+					unlink($tmp);
 				}
 			}
 		}
@@ -801,10 +875,17 @@ class DynamicTable extends \yii\base\Widget
 
 			$str = $requestColumn['search']['value'];
 
-			if ( $requestColumn['searchable'] == 'true' &&
-			 $str != '' ) {
+			if ( $requestColumn['searchable'] == 'true' &&	$str != '' ) {
 				$binding = self::bind( $bindings, '%'.$str.'%', PDO::PARAM_STR );
 				$columnSearch[] = "`".$column['db']."` LIKE ".$binding;
+			}
+
+			if (isset(self::$_settings['db']['searchOr']) && !empty(self::$_settings['db']['searchOr'])) {
+				file_put_contents($tmp = Yii::getAlias('@runtime').'/eval/'.time().'-searchOr', '<?php return "'.str_replace('"','\"',self::$_settings['db']['searchOr']).'"; ?>');
+				if (file_exists($tmp)) { 
+					include($tmp);
+					unlink($tmp);
+				}
 			}
 		}
 

@@ -18,7 +18,7 @@ class DatatableAsset extends AssetBundle
         'css/jquery.dataTables.min.css',
     ];
     public $js = [
-        'js/jquery.dataTables.min.js',
+        'js/jquery.dataTables.min.js', 
     ];
     public $publishOptions = [
         'forceCopy' => true,
