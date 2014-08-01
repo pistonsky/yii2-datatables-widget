@@ -28,15 +28,15 @@ class DynamicTable extends \yii\base\Widget
 
 	public function registerTranslations()
 	{
-	    $i18n = Yii::$app->i18n;
-	    $i18n->translations['snickom/datatables/*'] = [
-	        'class' => 'yii\i18n\PhpMessageSource',
-	        'sourceLanguage' => 'en',
-	        'basePath' => '@vendor/snickom/datatables/messages',
-	        'fileMap' => [
-	            'snickom/datatables/widget' => 'widget.php',
-	        ],
-	    ];
+		$i18n = Yii::$app->i18n;
+		Yii::$app->i18n->translations['snickom/datatables/*'] = [
+			'class' => 'yii\i18n\PhpMessageSource',
+			'sourceLanguage' => Yii::$app->language,
+			'basePath' => '@vendor/snickom/datatables/messages',
+			'fileMap' => [
+				'snickom/datatables/widget' => 'widget.php',
+			],
+		];
 	}
 
 	public static function widget($config = [])
