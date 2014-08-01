@@ -28,7 +28,6 @@ class DynamicTable extends \yii\base\Widget
 
 	public function registerTranslations()
 	{
-		$i18n = Yii::$app->i18n;
 		Yii::$app->i18n->translations['snickom/datatables/*'] = [
 			'class' => 'yii\i18n\PhpMessageSource',
 			'sourceLanguage' => Yii::$app->language,
