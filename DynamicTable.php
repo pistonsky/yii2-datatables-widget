@@ -657,9 +657,9 @@ class DynamicTable extends \yii\base\Widget
 		$where = self::filter( $request, self::$_settings['db']['columns'], $bindings );
 
 
-		if (!empty($config['db']['condition_where'])) {
-			if (!empty($where)) $where .= ' AND '.$config['db']['condition_where'];
-			else $where .= ' WHERE '.$config['db']['condition_where'];
+		if (!empty(self::$_settings['db']['condition_where'])) {
+			if (!empty($where)) $where .= ' AND '.self::$_settings['db']['condition_where'];
+			else $where .= ' WHERE '.self::$_settings['db']['condition_where'];
 		}
 
 		// Main query to actually get the data
@@ -669,7 +669,7 @@ class DynamicTable extends \yii\base\Widget
 			$sColumns[] = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($v),1,-1)).'` as `'.self::$_settings['db']['columns'][$k]['dt'].'`';
 		}
 
-		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['condition']) ? self::$_settings['condition'].' '.(!empty($where) ? $where : '') : $where)." ".$order;
+		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['db']['condition']) ? self::$_settings['db']['condition'].' '.(!empty($where) ? $where : '') : $where)." ".$order;
 
 		$data = Yii::$app->db->createCommand($sql.' '.$limit)->queryAll();
 
@@ -678,7 +678,7 @@ class DynamicTable extends \yii\base\Widget
 
 		// Total data set length
 		$primaryKey = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue(self::$_settings['db']['primaryKey']),1,-1)).'`';
-		$recordsTotal = Yii::$app->db->createCommand("SELECT COUNT({$primaryKey}) FROM `{$sTable}` `t`".(!empty(self::$_settings['condition']) ? self::$_settings['condition'] : ''))->queryScalar();
+		$recordsTotal = Yii::$app->db->createCommand("SELECT COUNT({$primaryKey}) FROM `{$sTable}` `t`".(!empty(self::$_settings['db']['condition']) ? self::$_settings['db']['condition'] : ''))->queryScalar();
 
 		/*
 		 * Output
