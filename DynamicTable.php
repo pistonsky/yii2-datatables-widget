@@ -28,15 +28,14 @@ class DynamicTable extends \yii\base\Widget
 
 	public function registerTranslations()
 	{
-	    $i18n = Yii::$app->i18n;
-	    $i18n->translations['snickom/datatables/*'] = [
-	        'class' => 'yii\i18n\PhpMessageSource',
-	        'sourceLanguage' => 'en',
-	        'basePath' => '@vendor/snickom/datatables/messages',
-	        'fileMap' => [
-	            'snickom/datatables/widget' => 'widget.php',
-	        ],
-	    ];
+		Yii::$app->i18n->translations['snickom/datatables/*'] = [
+			'class' => 'yii\i18n\PhpMessageSource',
+			'sourceLanguage' => Yii::$app->language,
+			'basePath' => '@vendor/snickom/datatables/messages',
+			'fileMap' => [
+				'snickom/datatables/widget' => 'widget.php',
+			],
+		];
 	}
 
 	public static function widget($config = [])
@@ -75,6 +74,9 @@ class DynamicTable extends \yii\base\Widget
 
 		if (!isset($config['db']['condition'])) 
 			$config['db']['condition'] = '';
+
+		if (!isset($config['db']['condition_where'])) 
+			$config['db']['condition_where'] = '';
 
 		if (!isset($config['db']['searchOr'])) 
 			$config['db']['searchOr'] = '';
@@ -654,6 +656,12 @@ class DynamicTable extends \yii\base\Widget
 		$order = self::order( $request, self::$_settings['db']['columns'] );
 		$where = self::filter( $request, self::$_settings['db']['columns'], $bindings );
 
+
+		if (!empty($config['db']['condition_where'])) {
+			if (!empty($where)) $where .= ' AND '.$config['db']['condition_where'];
+			else $where .= ' WHERE '.$config['db']['condition_where'];
+		}
+
 		// Main query to actually get the data
 		$sTable = substr(Yii::$app->db->quoteValue(self::$_settings['db']['table']),1,-1);
 		$sColumns = [];
@@ -661,7 +669,7 @@ class DynamicTable extends \yii\base\Widget
 			$sColumns[] = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($v),1,-1)).'` as `'.self::$_settings['db']['columns'][$k]['dt'].'`';
 		}
 
-		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['condition']) ? (!empty($where) ? $where : 'WHERE').' '.self::$_settings['condition'] : $where)." ".$order;
+		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['condition']) ? self::$_settings['condition'].' '.(!empty($where) ? $where : '') : $where)." ".$order;
 
 		$data = Yii::$app->db->createCommand($sql.' '.$limit)->queryAll();
 
@@ -670,7 +678,7 @@ class DynamicTable extends \yii\base\Widget
 
 		// Total data set length
 		$primaryKey = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue(self::$_settings['db']['primaryKey']),1,-1)).'`';
-		$recordsTotal = Yii::$app->db->createCommand("SELECT COUNT({$primaryKey}) FROM `{$sTable}` `t`".(!empty(self::$_settings['condition']) ? ' WHERE '.self::$_settings['condition'] : ''))->queryScalar();
+		$recordsTotal = Yii::$app->db->createCommand("SELECT COUNT({$primaryKey}) FROM `{$sTable}` `t`".(!empty(self::$_settings['condition']) ? self::$_settings['condition'] : ''))->queryScalar();
 
 		/*
 		 * Output

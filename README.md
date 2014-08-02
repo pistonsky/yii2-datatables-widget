@@ -77,6 +77,7 @@ Once the extension is installed, simply use it in your code by  :
             'table'=>'table', # !!! THIS IS REQUIRED !!! - Primary db table
             'primaryKey' =>'t.id',
             'condition' =>'',
+            'condition_where' => '',
             'searchOr' =>'',
             'searchAnd' =>'',
             'columns' =>[ # !!! THIS IS REQUIRED if your table doesn't have columns id & name !!! - Db columns to show
