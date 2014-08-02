@@ -669,7 +669,7 @@ class DynamicTable extends \yii\base\Widget
 			$sColumns[] = '`'.str_replace('.','`.`',substr(Yii::$app->db->quoteValue($v),1,-1)).'` as `'.self::$_settings['db']['columns'][$k]['dt'].'`';
 		}
 
-		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['db']['condition']) ? self::$_settings['db']['condition'].' '.(!empty($where) ? $where : '') : $where)." ".$order;
+		$sql = "SELECT SQL_CALC_FOUND_ROWS ".implode(',',$sColumns)." FROM `{$sTable}` `t` ".(!empty(self::$_settings['db']['condition']) ? self::$_settings['db']['condition'] : '')." ".$where." ".$order;
 
 		$data = Yii::$app->db->createCommand($sql.' '.$limit)->queryAll();
 
