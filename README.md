@@ -76,8 +76,8 @@ Once the extension is installed, simply use it in your code by  :
           'db'=>[
             'table'=>'table', # !!! THIS IS REQUIRED !!! - Primary db table
             'primaryKey' =>'t.id',
-            'condition' =>'',
-            'condition_where' => '',
+            'condition' =>'LEFT JOIN table2 t2 ON (t.id=t2.id)', # Condition for joining related tables
+            'condition_where' => 't.date_column BETWEEN \'2000-01-01 00:00:00\' AND \'2010-01-01 00:00:00\'', # Condition for adding special WHERE conditions
             'searchOr' =>'',
             'searchAnd' =>'',
             'columns' =>[ # !!! THIS IS REQUIRED if your table doesn't have columns id & name !!! - Db columns to show
