@@ -1,19 +1,19 @@
 <?php 
 
 /**
- * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>
- * @link https://github.com/snickom/yii2-datatables-widget
+ * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>, 2015 John Pistonsky <pistonsky@icloud.com>
+ * @link https://github.com/pistonsky/yii2-datatables-widget
  * @package yii2-datatables-widget
  * @version 1.0.0
  */
 
-namespace snickom\datatables;
+namespace pistonsky\datatables;
 
 use Yii;
 use yii\web\Response;
 use yii\helpers\Html;
 use yii\helpers\Url;
-use snickom\datatables\DatatableAsset;
+use pistonsky\datatables\DatatableAsset;
 
 class DynamicTable extends \yii\base\Widget
 {
@@ -28,12 +28,12 @@ class DynamicTable extends \yii\base\Widget
 
 	public function registerTranslations()
 	{
-		Yii::$app->i18n->translations['snickom/datatables/*'] = [
+		Yii::$app->i18n->translations['pistonsky/datatables/*'] = [
 			'class' => 'yii\i18n\PhpMessageSource',
 			'sourceLanguage' => Yii::$app->language,
-			'basePath' => '@vendor/snickom/datatables/messages',
+			'basePath' => '@vendor/pistonsky/datatables/messages',
 			'fileMap' => [
-				'snickom/datatables/widget' => 'widget.php',
+				'pistonsky/datatables/widget' => 'widget.php',
 			],
 		];
 	}
@@ -55,7 +55,7 @@ class DynamicTable extends \yii\base\Widget
 			$config['id'] = 'datatable-grid';
 
 		if (!isset($config['title'])) 
-			$config['title'] = Yii::t('snickom/datatables/widget','Table');
+			$config['title'] = Yii::t('pistonsky/datatables/widget','Table');
 
 		if (!isset($config['dt']['length'])) 
 			$config['dt']['length'] = 25;
@@ -89,7 +89,7 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => $config['db']['primaryKey'],
 				'dt' => str_replace('.', '__', $config['db']['primaryKey']), 
-				'title' => Yii::t('snickom/datatables/widget','ID'), 
+				'title' => Yii::t('pistonsky/datatables/widget','ID'), 
 				/*'searchable' => true, 
 				'orderable' => true, 
 				'filter' => []*/
@@ -97,7 +97,7 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => 't.name',
 				'dt' => 't__name',
-				'title' => Yii::t('snickom/datatables/widget','Name'), 
+				'title' => Yii::t('pistonsky/datatables/widget','Name'), 
 				/*'searchable' => true, 
 				'orderable' => true, 
 				'filter' => []*/
@@ -105,7 +105,7 @@ class DynamicTable extends \yii\base\Widget
 			[
 				'db' => $config['db']['primaryKey'],
 				'dt' => 'options',
-				'title' => Yii::t('snickom/datatables/widget','Options'), 
+				'title' => Yii::t('pistonsky/datatables/widget','Options'), 
 				'opt' => ['view','update','delete'], 
 				/*'searchable' => true, 
 				'orderable' => true, 
@@ -330,20 +330,20 @@ class DynamicTable extends \yii\base\Widget
 				'language': {
 					'decimal': '".(isset(self::$_settings['dt']['decimal']) ? self::$_settings['dt']['decimal'] : ',')."',
 					'thousands': '".(isset(self::$_settings['dt']['thousands']) ? self::$_settings['dt']['thousands'] : ' ')."',
-					'lengthMenu': '".Yii::t('snickom/datatables/widget','Display _MENU_ records per page')."',
-					'zeroRecords': '".Yii::t('snickom/datatables/widget','Nothing found - sorry')."',
-					'info': '".Yii::t('snickom/datatables/widget','Showing page from _START_ to _END_ from _TOTAL_)')."',
-					'infoEmpty': '".Yii::t('snickom/datatables/widget','No records available')."',
-					'infoFiltered': '".Yii::t('snickom/datatables/widget','(filtered from _MAX_ total records)')."',
-					'processing': '".Yii::t('snickom/datatables/widget','Please wait...')."',
+					'lengthMenu': '".Yii::t('pistonsky/datatables/widget','Display _MENU_ records per page')."',
+					'zeroRecords': '".Yii::t('pistonsky/datatables/widget','Nothing found - sorry')."',
+					'info': '".Yii::t('pistonsky/datatables/widget','Showing page from _START_ to _END_ from _TOTAL_)')."',
+					'infoEmpty': '".Yii::t('pistonsky/datatables/widget','No records available')."',
+					'infoFiltered': '".Yii::t('pistonsky/datatables/widget','(filtered from _MAX_ total records)')."',
+					'processing': '".Yii::t('pistonsky/datatables/widget','Please wait...')."',
 					'infoPostFix': '',
-					'search': '".Yii::t('snickom/datatables/widget','Search')."',
+					'search': '".Yii::t('pistonsky/datatables/widget','Search')."',
 					'url': '',
 					'paginate': {
-						'first':    '".Yii::t('snickom/datatables/widget','First')."',
-						'previous': '".Yii::t('snickom/datatables/widget','Back')."',
-						'next':     '".Yii::t('snickom/datatables/widget','Next')."',
-						'last':     '".Yii::t('snickom/datatables/widget','Last')."'
+						'first':    '".Yii::t('pistonsky/datatables/widget','First')."',
+						'previous': '".Yii::t('pistonsky/datatables/widget','Back')."',
+						'next':     '".Yii::t('pistonsky/datatables/widget','Next')."',
+						'last':     '".Yii::t('pistonsky/datatables/widget','Last')."'
 					}
 				}, 
 				".(isset(self::$_settings['dt']['stateSave']) ? "
@@ -419,7 +419,7 @@ class DynamicTable extends \yii\base\Widget
 			    } else {
 			        tr.addClass( 'details' );
 			        if (typeof row.data() != 'undefined') {
-				        row.child( '".Yii::t('snickom/datatables/widget','Loading ...')."' ).show();
+				        row.child( '".Yii::t('pistonsky/datatables/widget','Loading ...')."' ).show();
 				        var dataRow = row.data();
 				        $.ajax({
 					type: 'GET',
@@ -427,7 +427,7 @@ class DynamicTable extends \yii\base\Widget
 				        }).done(function( msg ) {
 				        	row.child( msg ).show();
 				        }).fail(function( jqXHR, textStatus ) {
-					row.child( '".Yii::t('snickom/datatables/widget','Request failed:')."' + textStatus ).show();
+					row.child( '".Yii::t('pistonsky/datatables/widget','Request failed:')."' + textStatus ).show();
 				        });
 
 				        // Add to the 'open' array
@@ -620,7 +620,7 @@ class DynamicTable extends \yii\base\Widget
 	                        			break;
 	                        	}
                         	} elseif (isset($value['opt'])) {
-                        		$return .= '<th><button type="button" id="clearDTfilter">'.Yii::t('snickom/datatables/widget','Clear filter').'</button></th>'; 
+                        		$return .= '<th><button type="button" id="clearDTfilter">'.Yii::t('pistonsky/datatables/widget','Clear filter').'</button></th>'; 
                         	} else {
                         		$return .= '<th></th>'; 
                         	}

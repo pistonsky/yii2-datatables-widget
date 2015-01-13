@@ -1,19 +1,19 @@
 <?php
 
 /**
- * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>
- * @link https://github.com/snickom/yii2-datatables-widget
+ * @copyright Copyright (c) 2014 Ján Hamrák <snickom@gmail.com>, 2015 John Pistonsky <pistonsky@icloud.com>
+ * @link https://github.com/pistonsky/yii2-datatables-widget
  * @package yii2-datatables-widget
  * @version 1.0.0
  */
 
-namespace snickom\datatables;
+namespace pistonsky\datatables;
 
 use yii\web\AssetBundle;
 
 class DatatableAsset extends AssetBundle
 {
-    public $sourcePath = '@vendor/snickom/yii2-datatables-widget/assets';
+    public $sourcePath = '@vendor/pistonsky/yii2-datatables-widget/assets';
     public $css = [
         'css/jquery.dataTables.min.css',
     ];

@@ -7,22 +7,9 @@ Yii2 extension implements jQuery DataTables
 Installation
 ------------
 
-The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
+cd to your vendor/yiisoft and do 
 
-Either run
-
-```
-php composer.phar require --prefer-dist snickom/yii2-datatables-widget "*"
-```
-
-or add
-
-```
-"snickom/yii2-datatables-widget": "*"
-```
-
-to the require section of your `composer.json` file.
-
+git clone https://github.com/pistonsky/yii2-datatables-widget.git
 
 Usage
 -----
@@ -30,7 +17,7 @@ Usage
 Once the extension is installed, simply use it in your code by  :
 
 ```php
-<?= \snickom\datatables\DynamicTable::widget([
+<?= \pistonsky\datatables\DynamicTable::widget([
           'id' => 'datatable-grid',
           'title' =>Yii::t('app','Table'),
           'dt'=>[
@@ -112,6 +99,6 @@ you can register pure assets for static tables:
 
 ```php
 
-\snickom\datatables\DatatableAsset::register($this);
+\pistonsky\datatables\DatatableAsset::register($this);
 
 ```
